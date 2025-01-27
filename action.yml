@@ -1,6 +1,7 @@
 name: 'Publish Maven Central Artifact'
 description:
-  'This action publishes a maven artifact from a local maven repository to Maven central.'
+  'This action publishes a maven artifact from a local maven repository to Maven
+  central.'
 author: 'Team AppliedEnergistics'
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
