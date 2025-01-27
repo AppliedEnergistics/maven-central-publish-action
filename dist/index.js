@@ -25348,7 +25348,9 @@ async function main() {
         try {
             responseText = await response.text();
         }
-        catch { }
+        catch {
+            // Ignored
+        }
         if (!response.ok) {
             core.setFailed(`Failed to upload bundle to ${apiUrl}: Status ${response.status}\n${responseText}`);
         }

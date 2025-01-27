@@ -24,7 +24,7 @@ inputs:
   manual-publishing:
     description: 'Allows manual publishing of the publication to be enabled'
     required: true
-    default: 'false'
+    default: false
   remote-repository-username:
     description: 'Username for the remote repository'
     required: false

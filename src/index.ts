@@ -53,10 +53,12 @@ async function main(): Promise<void> {
       }
     })
 
-    let responseText: string = ''
+    let responseText = ''
     try {
       responseText = await response.text()
-    } catch {}
+    } catch {
+      // Ignored
+    }
 
     if (!response.ok) {
       core.setFailed(
