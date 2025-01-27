@@ -46,6 +46,9 @@ async function main(): Promise<void> {
         if (manualPublishing) {
             console.info("Setting publishing type to USER_MANAGED");
             apiUrl.searchParams.set('publishingType', 'USER_MANAGED')
+        } else {
+            console.info("Setting publishing type to AUTOMATIC");
+            apiUrl.searchParams.set('publishingType', 'AUTOMATIC')
         }
 
         const bundleBlob = await fs.openAsBlob(bundlePath)
@@ -71,6 +74,7 @@ async function main(): Promise<void> {
         }
 
         statusUrl.searchParams.set("id", deploymentId);
+        console.log("Deployment ID: %s", deploymentId);
 
         // Poll for up to 60 seconds, which catches nearly all early errors
         const startPolling = new Date();
