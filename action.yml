@@ -14,23 +14,27 @@ inputs:
   local-repository-path:
     description: 'The path to the local Maven repository to publish from'
     required: true
-  api-url:
-    description: 'The URL to the Maven central publishing API'
+  upload-api-url:
+    description: 'The URL to the Maven central publishing API upload endpoint'
     required: true
     default: 'https://central.sonatype.com/api/v1/publisher/upload'
+  status-api-url:
+    description: 'The URL to the Maven central publishing API status endpoint'
+    required: true
+    default: 'https://central.sonatype.com/api/v1/publisher/status'
   deployment-name:
     description: 'Human readable name of the deployment'
     required: false
   manual-publishing:
     description: 'Allows manual publishing of the publication to be enabled'
     required: true
-    default: false
-  remote-repository-username:
-    description: 'Username for the remote repository'
-    required: false
-  remote-repository-password:
-    description: 'Password for the remote repository'
-    required: false
+    default: 'false'
+  username:
+    description: 'Maven Central Username'
+    required: true
+  password:
+    description: 'Maven Central Password'
+    required: true
   temp-dir:
     description: 'The temp directory to use'
     required: true

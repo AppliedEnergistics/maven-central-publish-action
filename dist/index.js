@@ -25309,32 +25309,39 @@ async function main() {
      * @returns {Promise<void>} Resolves when the action is complete.
      */
     try {
-        const localPath = core.getInput('local-repository-path');
-        const apiUrl = core.getInput('api-url');
+        const localPath = core.getInput('local-repository-path', { required: true });
+        const apiUrl = new URL(core.getInput('upload-api-url', { required: true }));
+        const statusUrl = new URL(core.getInput('status-api-url', { required: true }));
         const deploymentName = core.getInput('deployment-name');
-        const manualPublishing = core.getBooleanInput('manual-publishing');
-        const remoteUsername = core.getInput('remote-repository-username');
-        const remotePassword = core.getInput('remote-repository-password');
+        const manualPublishing = core.getBooleanInput('manual-publishing', { required: true });
+        const remoteUsername = core.getInput('username', { required: true });
+        const remotePassword = core.getInput('password', { required: true });
         let tempDir = core.getInput('temp-dir');
         if (!tempDir) {
             tempDir = os.tmpdir();
         }
         core.setSecret(remotePassword);
         const bundlePath = path.join(tempDir, 'bundle.tar.gz');
+        console.info("Building deployment bundle...");
         await (0, tar_1.create)({
             gzip: true,
             file: bundlePath,
-            cwd: localPath
-        }, ['.']);
-        const bundleBlob = new Blob([fs.readFileSync(bundlePath)]);
-        const formData = new FormData();
-        formData.append('bundle', bundleBlob);
+            cwd: localPath,
+            onWriteEntry(entry) {
+                console.debug("Added: %s", entry.path);
+            },
+        }, fs.readdirSync(localPath));
         if (deploymentName) {
-            formData.append('name', deploymentName);
+            console.info("Setting deployment name: %s", deploymentName);
+            apiUrl.searchParams.set('name', deploymentName);
         }
         if (manualPublishing) {
-            formData.append('publishingType', 'USER_MANAGED');
+            console.info("Setting publishing type to USER_MANAGED");
+            apiUrl.searchParams.set('publishingType', 'USER_MANAGED');
         }
+        const bundleBlob = await fs.openAsBlob(bundlePath);
+        const formData = new FormData();
+        formData.append('bundle', new File([bundleBlob], "bundle.tar.gz", { type: "application/octet-stream" }));
         const token = btoa(`${remoteUsername}:${remotePassword}`);
         core.setSecret(token);
         const response = await fetch(apiUrl, {
@@ -25344,18 +25351,39 @@ async function main() {
                 Authorization: `Bearer ${token}`
             }
         });
-        let responseText = '';
-        try {
-            responseText = await response.text();
-        }
-        catch {
-            // Ignored
-        }
+        const deploymentId = (await getResponseTextSafe(response)).trim();
         if (!response.ok) {
-            core.setFailed(`Failed to upload bundle to ${apiUrl}: Status ${response.status}\n${responseText}`);
+            core.setFailed(`Failed to upload bundle to ${apiUrl}: Status ${response.status}\n${deploymentId}`);
         }
         else {
-            core.setOutput('deployment-id', responseText.trim());
+            core.setOutput('deployment-id', deploymentId);
+        }
+        statusUrl.searchParams.set("id", deploymentId);
+        // Poll for up to 60 seconds, which catches nearly all early errors
+        const startPolling = new Date();
+        const endPolling = new Date(startPolling.getTime() + 60000);
+        while (startPolling < endPolling) {
+            await snooze(10000);
+            const statusResponse = await fetch(statusUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (!statusResponse.ok) {
+                const responseText = await getResponseTextSafe(statusResponse);
+                throw new Error("Failed to retrieve status for deployment " + deploymentId + ": " + responseText);
+            }
+            const statusJson = await statusResponse.json();
+            const { deploymentState } = statusJson;
+            if (deploymentState === 'PENDING' || deploymentState === 'VALIDATING') {
+                continue;
+            }
+            if (deploymentState === 'FAILED') {
+                core.setFailed("Maven central deployment failed: " + JSON.stringify(statusJson));
+            }
+            break;
         }
     }
     catch (error) {
@@ -25364,6 +25392,17 @@ async function main() {
             core.setFailed(error);
         throw error;
     }
+}
+async function getResponseTextSafe(response) {
+    try {
+        return await response.text();
+    }
+    catch (e) {
+        return `[failed to retrieve response text: ${e}]`;
+    }
+}
+function snooze(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 // noinspection JSIgnoredPromiseFromCall
 main();
