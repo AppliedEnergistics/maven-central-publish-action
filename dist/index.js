@@ -25303,7 +25303,6 @@ const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const fs = __importStar(__nccwpck_require__(7561));
 const tar_1 = __nccwpck_require__(6630);
-console.info('Hey loaded!');
 async function main() {
     /**
      * The main function for the action.
@@ -25362,7 +25361,7 @@ async function main() {
     catch (error) {
         // Fail the workflow run if an error occurs
         if (error instanceof Error)
-            core.setFailed(error.message);
+            core.setFailed(error);
     }
 }
 // noinspection JSIgnoredPromiseFromCall

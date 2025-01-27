@@ -4,8 +4,6 @@ import * as path from 'path'
 import * as fs from 'node:fs'
 import { create } from 'tar'
 
-console.info('Hey loaded!')
-
 async function main(): Promise<void> {
   /**
    * The main function for the action.
@@ -71,7 +69,7 @@ async function main(): Promise<void> {
     }
   } catch (error) {
     // Fail the workflow run if an error occurs
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) core.setFailed(error)
   }
 }
 
