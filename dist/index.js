@@ -25377,6 +25377,7 @@ async function main() {
             }
             const statusJson = await statusResponse.json();
             const { deploymentState } = statusJson;
+            console.info("Current deployment state: %s", deploymentState);
             if (deploymentState === 'PENDING' || deploymentState === 'VALIDATING') {
                 continue;
             }
