@@ -1,0 +1,44 @@
+name: 'Publish Maven Central Artifact'
+description:
+  'This action publishes a maven artifact from a local maven repository to Maven central.'
+author: 'Team AppliedEnergistics'
+
+# Add your action's branding here. This will appear on the GitHub Marketplace.
+branding:
+  icon: 'heart'
+  color: 'purple'
+
+# Define your inputs here.
+inputs:
+  local-repository-path:
+    description: 'The path to the local Maven repository to publish from'
+    required: true
+  api-url:
+    description: 'The URL to the Maven central publishing API'
+    required: true
+    default: 'https://central.sonatype.com/api/v1/publisher/upload'
+  deployment-name:
+    description: 'Human readable name of the deployment'
+    required: false
+  manual-publishing:
+    description: 'Allows manual publishing of the publication to be enabled'
+    required: true
+    default: 'false'
+  remote-repository-username:
+    description: 'Username for the remote repository'
+    required: false
+  remote-repository-password:
+    description: 'Password for the remote repository'
+    required: false
+  temp-dir:
+    description: 'The temp directory to use'
+    required: true
+    default: '${{ runner.temp }}'
+
+outputs:
+  deployment-id:
+    description: The ID of the deployment on Maven central
+
+runs:
+  using: node20
+  main: dist/index.js
