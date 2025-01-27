@@ -25335,7 +25335,7 @@ async function main() {
         if (manualPublishing) {
             formData.append('publishingType', 'USER_MANAGED');
         }
-        const token = atob(`${remoteUsername}:${remotePassword}`);
+        const token = btoa(`${remoteUsername}:${remotePassword}`);
         core.setSecret(token);
         const response = await fetch(apiUrl, {
             method: 'POST',
