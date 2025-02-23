@@ -5,33 +5,32 @@ import * as fs from 'node:fs'
 import { create } from 'tar'
 import { spawn } from 'child_process'
 
-async function verifyTar(filePath: string): Promise<void> {
+async function tar(...args: string[]): Promise<void> {
   return new Promise((resolve, reject) => {
     // Launch tar process with test flag
-    const tar = spawn('tar', ['tzf', filePath])
+    const process = spawn('tar', args)
 
-    let stderr = ''
     let hadError = false
 
     // Collect any error output
-    tar.stderr.on('data', data => {
-      stderr += data.toString()
+    process.stderr.on('data', data => {
+      console.log('%s', data.toString())
     })
 
     // Handle process errors
-    tar.on('error', error => {
+    process.on('error', error => {
       reject(error)
       hadError = true
     })
 
     // Handle process completion
-    tar.on('close', code => {
+    process.on('close', code => {
       if (hadError) return // Skip if we already handled an error
 
       if (code === 0) {
         resolve()
       } else {
-        reject(new Error(`Verification failed: ${stderr.trim()}`))
+        reject(new Error(`tar failed with code ${code}}`))
       }
     })
   })
@@ -79,7 +78,7 @@ async function main(): Promise<void> {
     )
 
     console.info(`Verifying deployment bundle ${bundlePath}...`)
-    await verifyTar(bundlePath)
+    await tar('tzf', bundlePath)
 
     if (deploymentName) {
       console.info('Setting deployment name: %s', deploymentName)
