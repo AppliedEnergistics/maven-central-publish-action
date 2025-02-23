@@ -25309,7 +25309,9 @@ async function main() {
      * @returns {Promise<void>} Resolves when the action is complete.
      */
     try {
-        const localPath = core.getInput('local-repository-path', { required: true });
+        const localPath = core.getInput('local-repository-path', {
+            required: true
+        });
         const apiUrl = new URL(core.getInput('upload-api-url', { required: true }));
         const statusUrl = new URL(core.getInput('status-api-url', { required: true }));
         const deploymentName = core.getInput('deployment-name');
@@ -25322,30 +25324,35 @@ async function main() {
         }
         core.setSecret(remotePassword);
         const bundlePath = path.join(tempDir, 'bundle.tar.gz');
-        console.info("Building deployment bundle...");
+        console.info('Building deployment bundle...');
         await (0, tar_1.create)({
             gzip: true,
             file: bundlePath,
             cwd: localPath,
             onWriteEntry(entry) {
-                console.debug("Added: %s", entry.path);
-            },
+                console.debug('Added: %s', entry.path);
+            }
         }, fs.readdirSync(localPath));
         if (deploymentName) {
-            console.info("Setting deployment name: %s", deploymentName);
+            console.info('Setting deployment name: %s', deploymentName);
             apiUrl.searchParams.set('name', deploymentName);
         }
         if (manualPublishing) {
-            console.info("Setting publishing type to USER_MANAGED");
+            console.info('Setting publishing type to USER_MANAGED');
             apiUrl.searchParams.set('publishingType', 'USER_MANAGED');
         }
         else {
-            console.info("Setting publishing type to AUTOMATIC");
+            console.info('Setting publishing type to AUTOMATIC');
             apiUrl.searchParams.set('publishingType', 'AUTOMATIC');
         }
         const bundleBlob = await fs.openAsBlob(bundlePath);
         const formData = new FormData();
-        formData.append('bundle', new File([bundleBlob], "bundle.tar.gz", { type: "application/octet-stream" }));
+        let bundleFile = new File([bundleBlob], 'bundle.tar.gz', {
+            type: 'application/octet-stream'
+        });
+        console.info('Bundle file name: %s', bundleFile.name);
+        console.info('Bundle file length: %s', bundleFile.size);
+        formData.append('bundle', bundleFile);
         const token = btoa(`${remoteUsername}:${remotePassword}`);
         core.setSecret(token);
         const response = await fetch(apiUrl, {
@@ -25362,8 +25369,8 @@ async function main() {
         else {
             core.setOutput('deployment-id', deploymentId);
         }
-        statusUrl.searchParams.set("id", deploymentId);
-        console.log("Deployment ID: %s", deploymentId);
+        statusUrl.searchParams.set('id', deploymentId);
+        console.log('Deployment ID: %s', deploymentId);
         // Poll for up to 60 seconds, which catches nearly all early errors
         const startPolling = new Date();
         const endPolling = new Date(startPolling.getTime() + 60000);
@@ -25378,16 +25385,19 @@ async function main() {
             });
             if (!statusResponse.ok) {
                 const responseText = await getResponseTextSafe(statusResponse);
-                throw new Error("Failed to retrieve status for deployment " + deploymentId + ": " + responseText);
+                throw new Error('Failed to retrieve status for deployment ' +
+                    deploymentId +
+                    ': ' +
+                    responseText);
             }
             const statusJson = await statusResponse.json();
             const { deploymentState } = statusJson;
-            console.info("Current deployment state: %s", deploymentState);
+            console.info('Current deployment state: %s', deploymentState);
             if (deploymentState === 'PENDING' || deploymentState === 'VALIDATING') {
                 continue;
             }
             if (deploymentState === 'FAILED') {
-                core.setFailed("Maven central deployment failed: " + JSON.stringify(statusJson));
+                core.setFailed('Maven central deployment failed: ' + JSON.stringify(statusJson));
             }
             break;
         }
