@@ -3,6 +3,39 @@ import * as os from 'os'
 import * as path from 'path'
 import * as fs from 'node:fs'
 import { create } from 'tar'
+import { spawn } from 'child_process'
+
+function verifyTar(filePath: string) {
+  return new Promise((resolve, reject) => {
+    // Launch tar process with test flag
+    const tar = spawn('tar', ['tzf', filePath])
+
+    let stderr = ''
+    let hadError = false
+
+    // Collect any error output
+    tar.stderr.on('data', data => {
+      stderr += data.toString()
+    })
+
+    // Handle process errors
+    tar.on('error', error => {
+      reject(error)
+      hadError = true
+    })
+
+    // Handle process completion
+    tar.on('close', code => {
+      if (hadError) return // Skip if we already handled an error
+
+      if (code === 0) {
+        resolve(true)
+      } else {
+        reject(new Error(`Verification failed: ${stderr.trim()}`))
+      }
+    })
+  })
+}
 
 async function main(): Promise<void> {
   /**
@@ -44,6 +77,9 @@ async function main(): Promise<void> {
       },
       fs.readdirSync(localPath)
     )
+
+    console.info(`Verifying deployment bundle ${bundlePath}...`)
+    await verifyTar(bundlePath)
 
     if (deploymentName) {
       console.info('Setting deployment name: %s', deploymentName)

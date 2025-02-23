@@ -25303,6 +25303,35 @@ const os = __importStar(__nccwpck_require__(2037));
 const path = __importStar(__nccwpck_require__(1017));
 const fs = __importStar(__nccwpck_require__(7561));
 const tar_1 = __nccwpck_require__(6630);
+const child_process_1 = __nccwpck_require__(2081);
+function verifyTar(filePath) {
+    return new Promise((resolve, reject) => {
+        // Launch tar process with test flag
+        const tar = (0, child_process_1.spawn)('tar', ['tzf', filePath]);
+        let stderr = '';
+        let hadError = false;
+        // Collect any error output
+        tar.stderr.on('data', data => {
+            stderr += data.toString();
+        });
+        // Handle process errors
+        tar.on('error', error => {
+            reject(error);
+            hadError = true;
+        });
+        // Handle process completion
+        tar.on('close', code => {
+            if (hadError)
+                return; // Skip if we already handled an error
+            if (code === 0) {
+                resolve(true);
+            }
+            else {
+                reject(new Error(`Verification failed: ${stderr.trim()}`));
+            }
+        });
+    });
+}
 async function main() {
     /**
      * The main function for the action.
@@ -25333,6 +25362,8 @@ async function main() {
                 console.debug('Added: %s', entry.path);
             }
         }, fs.readdirSync(localPath));
+        console.info(`Verifying deployment bundle ${bundlePath}...`);
+        await verifyTar(bundlePath);
         if (deploymentName) {
             console.info('Setting deployment name: %s', deploymentName);
             apiUrl.searchParams.set('name', deploymentName);
@@ -25447,6 +25478,14 @@ module.exports = require("async_hooks");
 
 "use strict";
 module.exports = require("buffer");
+
+/***/ }),
+
+/***/ 2081:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("child_process");
 
 /***/ }),
 
