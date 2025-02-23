@@ -25304,7 +25304,7 @@ const path = __importStar(__nccwpck_require__(1017));
 const fs = __importStar(__nccwpck_require__(7561));
 const tar_1 = __nccwpck_require__(6630);
 const child_process_1 = __nccwpck_require__(2081);
-function verifyTar(filePath) {
+async function verifyTar(filePath) {
     return new Promise((resolve, reject) => {
         // Launch tar process with test flag
         const tar = (0, child_process_1.spawn)('tar', ['tzf', filePath]);
@@ -25324,7 +25324,7 @@ function verifyTar(filePath) {
             if (hadError)
                 return; // Skip if we already handled an error
             if (code === 0) {
-                resolve(true);
+                resolve();
             }
             else {
                 reject(new Error(`Verification failed: ${stderr.trim()}`));
@@ -25378,7 +25378,7 @@ async function main() {
         }
         const bundleBlob = await fs.openAsBlob(bundlePath);
         const formData = new FormData();
-        let bundleFile = new File([bundleBlob], 'bundle.tar.gz', {
+        const bundleFile = new File([bundleBlob], 'bundle.tar.gz', {
             type: 'application/octet-stream'
         });
         console.info('Bundle file name: %s', bundleFile.name);
@@ -25416,10 +25416,7 @@ async function main() {
             });
             if (!statusResponse.ok) {
                 const responseText = await getResponseTextSafe(statusResponse);
-                throw new Error('Failed to retrieve status for deployment ' +
-                    deploymentId +
-                    ': ' +
-                    responseText);
+                throw new Error(`Failed to retrieve status for deployment ${deploymentId}: ${responseText}`);
             }
             const statusJson = await statusResponse.json();
             const { deploymentState } = statusJson;
@@ -25428,7 +25425,7 @@ async function main() {
                 continue;
             }
             if (deploymentState === 'FAILED') {
-                core.setFailed('Maven central deployment failed: ' + JSON.stringify(statusJson));
+                core.setFailed(`Maven central deployment failed: ${JSON.stringify(statusJson)}`);
             }
             break;
         }
@@ -25448,7 +25445,7 @@ async function getResponseTextSafe(response) {
         return `[failed to retrieve response text: ${e}]`;
     }
 }
-function snooze(ms) {
+async function snooze(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 // noinspection JSIgnoredPromiseFromCall

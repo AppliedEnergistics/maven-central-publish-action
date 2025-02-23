@@ -5,7 +5,7 @@ import * as fs from 'node:fs'
 import { create } from 'tar'
 import { spawn } from 'child_process'
 
-function verifyTar(filePath: string) {
+async function verifyTar(filePath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     // Launch tar process with test flag
     const tar = spawn('tar', ['tzf', filePath])
@@ -29,7 +29,7 @@ function verifyTar(filePath: string) {
       if (hadError) return // Skip if we already handled an error
 
       if (code === 0) {
-        resolve(true)
+        resolve()
       } else {
         reject(new Error(`Verification failed: ${stderr.trim()}`))
       }
@@ -95,7 +95,7 @@ async function main(): Promise<void> {
 
     const bundleBlob = await fs.openAsBlob(bundlePath)
     const formData = new FormData()
-    let bundleFile = new File([bundleBlob], 'bundle.tar.gz', {
+    const bundleFile = new File([bundleBlob], 'bundle.tar.gz', {
       type: 'application/octet-stream'
     })
     console.info('Bundle file name: %s', bundleFile.name)
@@ -139,10 +139,7 @@ async function main(): Promise<void> {
       if (!statusResponse.ok) {
         const responseText = await getResponseTextSafe(statusResponse)
         throw new Error(
-          'Failed to retrieve status for deployment ' +
-            deploymentId +
-            ': ' +
-            responseText
+          `Failed to retrieve status for deployment ${deploymentId}: ${responseText}`
         )
       }
 
@@ -155,7 +152,7 @@ async function main(): Promise<void> {
       }
       if (deploymentState === 'FAILED') {
         core.setFailed(
-          'Maven central deployment failed: ' + JSON.stringify(statusJson)
+          `Maven central deployment failed: ${JSON.stringify(statusJson)}`
         )
       }
       break
@@ -175,7 +172,7 @@ async function getResponseTextSafe(response: Response): Promise<string> {
   }
 }
 
-function snooze(ms: number) {
+async function snooze(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
